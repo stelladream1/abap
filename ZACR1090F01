@@ -1,0 +1,698 @@
+*&---------------------------------------------------------------------*
+*& Include          ZACR1090F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form GET_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM GET_DATA .
+  SELECT
+    R~ROLE_NAME AS ROLE_NAME,
+    RT~DESCN AS ROLE_DESCN,
+    RFA~ROLEID,
+    RFA~FUNAREA AS FUNAREA,
+    FT~DESCN AS FUNAREA_DESCN
+  FROM
+    GRACROLEFA AS RFA
+  LEFT OUTER JOIN GRACROLE AS R
+    ON RFA~ROLEID = R~ROLEID
+  LEFT OUTER JOIN GRACROLET AS RT
+    ON R~ROLEID = RT~ROLEID
+    AND RT~LANGU = @SY-LANGU
+  LEFT OUTER JOIN GRACFUNCTAREAT AS FT
+    ON FT~FUNAREA = RFA~FUNAREA
+    AND FT~LANGU = @SY-LANGU
+  INTO CORRESPONDING FIELDS OF TABLE @GT_DATA.
+
+*  WHERE R~ROLE_NAME IN @SO_RNAME
+*  AND   RFA~FUNAREA IN @SO_FUN.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_SET_SCREEN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_SET_SCREEN .
+  IF GO_DOCKING_CONTAINER IS INITIAL.
+    PERFORM ALV_CL_SET_SCREEN.
+  ELSE.
+    PERFORM ALV_CL_REFRESH_TABLE_DISPLAY.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_SET_SCREEN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_SET_SCREEN .
+  PERFORM ALV_CL_CREATE_OBJ_DOCK_CONT.
+  PERFORM ALV_CL_CREATE_OBJ_EVENT.
+  PERFORM ALV_CL_LAYOUT.
+  PERFORM ALV_CL_FCAT.
+  PERFORM ALV_CL_REGISTER_EDIT_EVENT.
+  PERFORM ALV_CL_EXCLUDE_FCODE.
+  PERFORM ALV_CL_SET_FOR_INPUT.
+  PERFORM ALV_CL_SET_FOR_FIRST_DISPLAY.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_REFRESH
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_REFRESH .
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_CREATE_OBJ_DOCK_CONT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_CREATE_OBJ_DOCK_CONT .
+  CLEAR GO_DOCKING_CONTAINER.
+  DATA: LV_EXTENSION TYPE I VALUE 1500.
+
+  CREATE OBJECT GO_DOCKING_CONTAINER
+    EXPORTING
+      REPID     = SY-REPID
+      DYNNR     = SY-DYNNR
+      SIDE      = GO_DOCKING_CONTAINER->DOCK_AT_LEFT
+      EXTENSION = LV_EXTENSION.
+
+  CREATE OBJECT GO_ALV_GRID
+    EXPORTING
+      I_PARENT = GO_DOCKING_CONTAINER.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_LAYOUT .
+  CLEAR GS_LAYOUT.
+  GS_LAYOUT-STYLEFNAME = 'CELLSTYL'.
+  GS_LAYOUT-CTAB_FNAME = 'CELLTAB'.
+  GS_LAYOUT-SEL_MODE   = 'D'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_FCAT .
+
+  CLEAR GT_FCAT.
+
+  CLEAR: GS_FCAT.
+  GS_FCAT-FIELDNAME = 'ICON'.
+  GS_FCAT-COLTEXT   = 'ERROR'.
+  GS_FCAT-OUTPUTLEN = 3.
+  GS_FCAT-COL_POS   = 1.
+  GS_FCAT-ICON      = 'X'.
+  GS_FCAT-EMPHASIZE = 'C000'.
+  APPEND GS_FCAT TO GT_FCAT.
+
+  CLEAR: GS_FCAT.
+  GS_FCAT-FIELDNAME = 'ROLE_NAME'.
+  GS_FCAT-REF_TABLE = 'GRACROLE'.
+  GS_FCAT-REF_FIELD = 'ROLE_NAME'.
+  GS_FCAT-OUTPUTLEN = 25.
+  GS_FCAT-COL_POS   = 2.
+  APPEND GS_FCAT TO GT_FCAT.
+
+  CLEAR: GS_FCAT.
+  GS_FCAT-FIELDNAME = 'ROLE_DESCN'.
+  GS_FCAT-REF_TABLE = 'GRACROLET'.
+  GS_FCAT-REF_FIELD = 'DESCN'.
+  GS_FCAT-OUTPUTLEN = 30.
+  GS_FCAT-COL_POS   = 3.
+  APPEND GS_FCAT TO GT_FCAT.
+
+  CLEAR GS_FCAT.
+  GS_FCAT-FIELDNAME = 'FUNAREA'.
+  GS_FCAT-REF_TABLE = 'GRACFUNCTAREA'.
+  GS_FCAT-REF_FIELD = 'FUNAREA'.
+  GS_FCAT-EDIT = 'X'.
+  GS_FCAT-OUTPUTLEN = 15.
+  GS_FCAT-COL_POS   = 4.
+  GS_FCAT-KEY       = 'X'.
+  APPEND GS_FCAT TO GT_FCAT.
+
+  CLEAR GS_FCAT.
+  GS_FCAT-FIELDNAME = 'FUNAREA_DESCN'.
+  GS_FCAT-REF_TABLE = 'GRACFUNCTAREAT'.
+  GS_FCAT-REF_FIELD = 'DESCN'.
+  GS_FCAT-OUTPUTLEN = 20.
+  GS_FCAT-COL_POS   = 5.
+  APPEND GS_FCAT TO GT_FCAT.
+
+  SORT GT_FCAT BY FIELDNAME.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_SET_FOR_FIRST_DISPLAY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_SET_FOR_FIRST_DISPLAY .
+
+  CALL METHOD GO_ALV_GRID->SET_TABLE_FOR_FIRST_DISPLAY
+    EXPORTING
+      I_SAVE               = 'A'
+      IS_LAYOUT            = GS_LAYOUT
+      IT_TOOLBAR_EXCLUDING = GT_FCODE
+    CHANGING
+      IT_FIELDCATALOG      = GT_FCAT[]
+      IT_OUTTAB            = GT_DATA.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_TOOLBAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_INTERACTIVE
+*&      --> E_OBJECT
+*&---------------------------------------------------------------------*
+FORM ALV_CL_TOOLBAR  USING    P_INTERACTIVE
+                              P_OBJECT TYPE REF TO CL_ALV_EVENT_TOOLBAR_SET.
+
+  DATA: LS_TOOLBAR TYPE STB_BUTTON.
+  CLEAR: LS_TOOLBAR.
+
+  MOVE 3 TO LS_TOOLBAR-BUTN_TYPE.
+  APPEND LS_TOOLBAR TO P_OBJECT->MT_TOOLBAR.
+
+  CLEAR: LS_TOOLBAR.
+  MOVE 'REFRESH'            TO LS_TOOLBAR-FUNCTION.
+  MOVE 'REFRESH'           TO LS_TOOLBAR-TEXT.
+  MOVE '새로고침'          TO LS_TOOLBAR-QUICKINFO.
+  MOVE ICON_REFRESH        TO LS_TOOLBAR-ICON.
+  MOVE ' '                 TO LS_TOOLBAR-DISABLED.
+  APPEND LS_TOOLBAR        TO P_OBJECT->MT_TOOLBAR.
+
+  CLEAR: LS_TOOLBAR.
+  MOVE 'INSERT'              TO LS_TOOLBAR-FUNCTION.
+  MOVE '추가'              TO LS_TOOLBAR-TEXT.
+  MOVE '추가'              TO LS_TOOLBAR-QUICKINFO.
+  MOVE ICON_INSERT_ROW     TO LS_TOOLBAR-ICON.
+  MOVE ' '                 TO LS_TOOLBAR-DISABLED.
+  APPEND LS_TOOLBAR        TO P_OBJECT->MT_TOOLBAR.
+
+  CLEAR: LS_TOOLBAR.
+  MOVE 'DELETE'              TO LS_TOOLBAR-FUNCTION.
+  MOVE '삭제'              TO LS_TOOLBAR-TEXT.
+  MOVE '삭제'              TO LS_TOOLBAR-QUICKINFO.
+  MOVE ICON_DELETE_ROW     TO LS_TOOLBAR-ICON.
+  MOVE ' '                 TO LS_TOOLBAR-DISABLED.
+  APPEND LS_TOOLBAR        TO P_OBJECT->MT_TOOLBAR.
+
+  CLEAR: LS_TOOLBAR.
+  MOVE 'SAVE'              TO LS_TOOLBAR-FUNCTION.
+  MOVE '저장'              TO LS_TOOLBAR-TEXT.
+  MOVE '저장'              TO LS_TOOLBAR-QUICKINFO.
+  MOVE ICON_SYSTEM_SAVE    TO LS_TOOLBAR-ICON.
+  MOVE ' '                 TO LS_TOOLBAR-DISABLED.
+  APPEND LS_TOOLBAR        TO P_OBJECT->MT_TOOLBAR.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_USER_COMMAND
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> E_UCOMM
+*&---------------------------------------------------------------------*
+FORM ALV_CL_USER_COMMAND  USING  P_UCOMM.
+  CALL METHOD CL_GUI_CFW=>SET_NEW_OK_CODE
+    EXPORTING
+      NEW_CODE = P_UCOMM.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_DATA_CHANGED
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> ER_DATA_CHANGED
+*&---------------------------------------------------------------------*
+FORM ALV_CL_DATA_CHANGED  USING  PR_DATA_CHANGED TYPE REF TO CL_ALV_CHANGED_DATA_PROTOCOL.
+  DATA: LS_MOD_CELL TYPE LVC_S_MODI.
+
+  DATA: LV_DATA TYPE TY_S_ROLE-ROLE_NAME.
+
+  LOOP AT PR_DATA_CHANGED->MT_MOD_CELLS INTO LS_MOD_CELL.
+    READ TABLE GT_DATA INTO DATA(GS_DATA) INDEX LS_MOD_CELL-ROW_ID.
+
+    IF GS_DATA-MARK <> 'I'.
+      PERFORM ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED LS_MOD_CELL-ROW_ID 'MARK' 'M'.
+      PERFORM ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED LS_MOD_CELL-ROW_ID 'FUN_OLD' GS_DATA-FUNAREA.
+    ENDIF.
+
+    CASE LS_MOD_CELL-FIELDNAME.
+      WHEN 'ROLE_NAME'.
+        PERFORM CHECK_ROLENAME USING PR_DATA_CHANGED LS_MOD_CELL.
+      WHEN 'FUNAREA'.
+        PERFORM CHECK_FUNAREA  USING PR_DATA_CHANGED LS_MOD_CELL.
+    ENDCASE.
+  ENDLOOP.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_CREATE_OBJ_EVENT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_CREATE_OBJ_EVENT .
+  CREATE OBJECT G_EVENT_OBJECT.
+  SET HANDLER  G_EVENT_OBJECT->HANDLE_TOOLBAR FOR GO_ALV_GRID.
+  SET HANDLER  G_EVENT_OBJECT->HANDLE_USER_COMMAND FOR GO_ALV_GRID.
+  SET HANDLER  G_EVENT_OBJECT->HANDLE_DATA_CHANGED FOR GO_ALV_GRID.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_EXCLUDE_FCODE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_EXCLUDE_FCODE .
+
+  CLEAR: GT_FCODE.
+  PERFORM ALV_CL_APPEND_EXCLUDE_FUNCTION
+    TABLES GT_FCODE
+    USING:
+           CL_GUI_ALV_GRID=>MC_FC_LOC_UNDO,
+           CL_GUI_ALV_GRID=>MC_FC_DESELECT_ALL,
+           CL_GUI_ALV_GRID=>MC_FC_GRAPH,
+           CL_GUI_ALV_GRID=>MC_FC_INFO,
+           CL_GUI_ALV_GRID=>MC_FC_LOC_COPY_ROW,
+           CL_GUI_ALV_GRID=>MC_FC_LOC_CUT,
+           CL_GUI_ALV_GRID=>MC_FC_LOC_DELETE_ROW,
+           CL_GUI_ALV_GRID=>MC_FC_LOC_INSERT_ROW,
+           CL_GUI_ALV_GRID=>MC_FC_LOC_APPEND_ROW,
+           CL_GUI_ALV_GRID=>MC_FC_LOC_MOVE_ROW,
+           CL_GUI_ALV_GRID=>MC_FC_LOC_PASTE,
+           CL_GUI_ALV_GRID=>MC_FC_LOC_PASTE_NEW_ROW,
+           CL_GUI_ALV_GRID=>MC_FC_REFRESH,
+           CL_GUI_ALV_GRID=>MC_FC_SELECT_ALL,
+           CL_GUI_ALV_GRID=>MC_FC_SUBTOT,
+           CL_GUI_ALV_GRID=>MC_MB_SUM,
+           CL_GUI_ALV_GRID=>MC_FC_SUM,
+           CL_GUI_ALV_GRID=>MC_FC_VIEW_CRYSTAL.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_APPEND_EXCLUDE_FUNCTION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> GT_FCODE
+*&      --> CL_GUI_ALV_GRID=>MC_FC_LOC_UND
+*&---------------------------------------------------------------------*
+FORM ALV_CL_APPEND_EXCLUDE_FUNCTION  TABLES   PT_FCODE
+                                     USING    P_VALUE.
+  DATA: LS_EXCLUDE TYPE UI_FUNC.
+  LS_EXCLUDE  = P_VALUE.
+  APPEND LS_EXCLUDE TO GT_FCODE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_REGISTER_EDIT_EVENT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_REGISTER_EDIT_EVENT .
+  IF SY-BATCH IS INITIAL.
+    CALL METHOD GO_ALV_GRID->REGISTER_EDIT_EVENT
+      EXPORTING
+        I_EVENT_ID = CL_GUI_ALV_GRID=>MC_EVT_MODIFIED.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_SET_FOR_INPUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_SET_FOR_INPUT .
+
+  DATA:LV_INPUT TYPE I.
+  LV_INPUT = 1.
+
+  CALL METHOD GO_ALV_GRID->SET_READY_FOR_INPUT
+    EXPORTING
+      I_READY_FOR_INPUT = LV_INPUT.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INSERT_ROW
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM INSERT_ROW .
+  DATA: LT_INDEX_ROWS TYPE LVC_T_ROW,
+        LT_ROW_NO     TYPE LVC_T_ROID.
+  DATA: LV_TABIX      TYPE SY-TABIX.
+
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_INDEX_ROWS
+      ET_ROW_NO     = LT_ROW_NO.
+
+  CALL METHOD GO_ALV_GRID->GET_CURRENT_CELL
+    IMPORTING
+      E_ROW = LV_TABIX.
+
+  IF LV_TABIX = 0.
+    LV_TABIX = 1.
+  ENDIF.
+
+  DATA(LS_INSERT) = VALUE TY_S_ROLE( MARK = 'I'
+                          CELLSTYL =  VALUE #( ( FIELDNAME = 'ROLE_NAME'
+                                                  STYLE = CL_GUI_ALV_GRID=>MC_STYLE_ENABLED ) ) ).
+
+  INSERT LS_INSERT INTO GT_DATA INDEX LV_TABIX.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_MODIFY_ROW
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> PR_DATA_CHANGED
+*&      --> LS_MOD_CELL_ROW_ID
+*&      --> P_
+*&      --> P_
+*&---------------------------------------------------------------------*
+FORM ALV_CL_MODIFY_ROW  USING    PR_DATA_CHANGED TYPE REF TO CL_ALV_CHANGED_DATA_PROTOCOL
+                                 P_ROWID
+                                 P_FIELDNAME
+                                 P_VALUE.
+
+  CALL METHOD PR_DATA_CHANGED->MODIFY_CELL
+    EXPORTING
+      I_ROW_ID    = P_ROWID
+      I_FIELDNAME = P_FIELDNAME
+      I_VALUE     = P_VALUE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_ROLENAME
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CHECK_ROLENAME USING PR_DATA_CHANGED TYPE REF TO CL_ALV_CHANGED_DATA_PROTOCOL
+                          P_MOD_CELL TYPE LVC_S_MODI.
+
+  READ TABLE GT_DATA INTO DATA(LS_DATA) INDEX P_MOD_CELL-ROW_ID.
+
+  SELECT SINGLE R~ROLEID, T~DESCN
+  FROM GRACROLE AS R
+  LEFT JOIN GRACROLET AS T
+    ON R~ROLEID = T~ROLEID
+    AND LANGU   = @SY-LANGU
+  WHERE R~ROLE_NAME = @P_MOD_CELL-VALUE
+  INTO @DATA(LS_ROLE).
+
+  SELECT SINGLE *
+  FROM  GRACFUNCTAREA AS F
+  LEFT JOIN GRACFUNCTAREAT AS T
+    ON F~FUNAREA = T~FUNAREA
+  WHERE F~FUNAREA = @LS_DATA-FUNAREA
+    AND T~LANGU = @SY-LANGU
+  INTO @DATA(LS_FUNCT).
+
+  IF LS_ROLE IS INITIAL.
+
+    PERFORM  ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED
+                                    P_MOD_CELL-ROW_ID
+                                    'ICON'
+                                    '@0A@'.
+
+  ELSE.
+    IF LS_FUNCT IS NOT INITIAL.
+      PERFORM  ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED
+                                      P_MOD_CELL-ROW_ID
+                                      'ICON'
+                                      ''.
+    ENDIF.
+
+  ENDIF.
+
+  PERFORM  ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED
+                                   P_MOD_CELL-ROW_ID
+                                   'ROLE_DESCN'
+                                   LS_ROLE-DESCN.
+  PERFORM  ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED
+                                   P_MOD_CELL-ROW_ID
+                                   'ROLEID'
+                                   LS_ROLE-ROLEID.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_CL_REFRESH_TABLE_DISPLAY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM ALV_CL_REFRESH_TABLE_DISPLAY .
+  DATA: LS_TABLE TYPE LVC_S_STBL.
+  LS_TABLE-ROW = 'X'.
+  LS_TABLE-COL = 'X'.
+
+  CALL METHOD GO_ALV_GRID->SET_FRONTEND_LAYOUT
+    EXPORTING
+      IS_LAYOUT = GS_LAYOUT.
+  CALL METHOD GO_ALV_GRID->REFRESH_TABLE_DISPLAY
+    EXPORTING
+      IS_STABLE      = LS_TABLE
+      I_SOFT_REFRESH = ' '.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_FUNAREA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> PR_DATA_CHANGED
+*&      --> LS_MOD_CELL
+*&---------------------------------------------------------------------*
+FORM CHECK_FUNAREA  USING    PR_DATA_CHANGED TYPE REF TO CL_ALV_CHANGED_DATA_PROTOCOL
+                              P_MOD_CELL TYPE LVC_S_MODI.
+
+  READ TABLE GT_DATA INTO DATA(LS_DATA) INDEX P_MOD_CELL-ROW_ID.
+
+  SELECT SINGLE *
+  FROM  GRACFUNCTAREA AS F
+  LEFT JOIN GRACFUNCTAREAT AS T
+    ON F~FUNAREA = T~FUNAREA
+  WHERE F~FUNAREA = @P_MOD_CELL-VALUE
+    AND T~LANGU = @SY-LANGU
+  INTO @DATA(LS_FUNCT).
+
+  SELECT SINGLE R~ROLEID, T~DESCN
+  FROM GRACROLE AS R
+  LEFT JOIN GRACROLET AS T
+    ON R~ROLEID = T~ROLEID
+    AND LANGU   = @SY-LANGU
+  WHERE R~ROLE_NAME = @LS_DATA-ROLE_NAME
+  INTO @DATA(LS_ROLE).
+
+  IF LS_FUNCT IS INITIAL.
+    PERFORM  ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED
+                                    P_MOD_CELL-ROW_ID
+                                    'ICON'
+                                    '@0A@'.
+
+  ELSE.
+    IF LS_ROLE IS NOT INITIAL.
+      PERFORM  ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED
+                              P_MOD_CELL-ROW_ID
+                              'ICON'
+                              ''.
+    ENDIF.
+
+  ENDIF.
+  PERFORM  ALV_CL_MODIFY_ROW USING PR_DATA_CHANGED
+                                   P_MOD_CELL-ROW_ID
+                                  'FUNAREA_DESCN'
+                                  LS_FUNCT-T-DESCN.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DELETE_ROW
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DELETE_ROW .
+  DATA: LT_INDEX_ROWS TYPE LVC_T_ROW,
+        LT_ROW_NO     TYPE LVC_T_ROID.
+
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_INDEX_ROWS
+      ET_ROW_NO     = LT_ROW_NO.
+
+  SORT LT_INDEX_ROWS BY INDEX DESCENDING.
+
+  LOOP AT LT_INDEX_ROWS INTO DATA(LS_INDEX_ROWS).
+    READ TABLE GT_DATA INTO DATA(LS_DATA) INDEX LS_INDEX_ROWS-INDEX .
+    ASSIGN LS_DATA TO FIELD-SYMBOL(<FS_DATA>).
+    DELETE TABLE GT_DATA FROM <FS_DATA>.
+    IF <FS_DATA>-MARK <> 'I'.
+      <FS_DATA>-MARK = 'D'.
+      GT_DELETE = VALUE #( BASE GT_DELETE ( CORRESPONDING #( <FS_DATA> ) ) ) .
+    ENDIF.
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SAVE_DATA .
+  CLEAR: GT_INSERT, GT_MODIFY.
+
+  DATA: LV_ANSWER(1) TYPE C.
+
+  PERFORM DISPLAY_MESSAGE USING  TEXT-008
+                                 TEXT-009
+                                 TEXT-010
+                                 TEXT-011
+                        CHANGING LV_ANSWER.
+  CHECK LV_ANSWER = 1.
+
+  CALL METHOD GO_ALV_GRID->CHECK_CHANGED_DATA.
+
+  LOOP AT GT_DATA INTO DATA(LS_DATA).
+
+
+    IF LS_DATA-ROLE_NAME IS INITIAL OR LS_DATA-FUNAREA IS INITIAL.
+      CONTINUE.
+    ENDIF.
+
+    IF LS_DATA-ICON IS NOT INITIAL.
+      MESSAGE I009 DISPLAY LIKE 'E'.
+      RETURN.
+    ENDIF.
+
+    CASE LS_DATA-MARK.
+      WHEN 'I'.
+        READ TABLE GT_DATA WITH KEY MARK = ''
+                                    ROLEID = LS_DATA-ROLEID
+                                    FUNAREA = LS_DATA-FUNAREA TRANSPORTING NO FIELDS.
+        IF SY-SUBRC = 0.
+          CONTINUE.
+        ELSE.
+          GT_INSERT = VALUE #( BASE GT_INSERT  ( ROLEID = LS_DATA-ROLEID
+                                              FUNAREA = LS_DATA-FUNAREA ) ).
+        ENDIF.
+
+      WHEN 'M'.
+        READ TABLE GT_DATA WITH KEY MARK = ''
+                                     ROLEID = LS_DATA-ROLEID
+                                     FUNAREA = LS_DATA-FUNAREA TRANSPORTING NO FIELDS.
+        IF SY-SUBRC = 0.
+          CONTINUE.
+        ELSE.
+
+          GT_DELETE = VALUE #( BASE GT_DELETE ( ROLEID = LS_DATA-ROLEID
+                                                FUNAREA = LS_DATA-FUN_OLD ) ).
+          GT_INSERT = VALUE #( BASE GT_INSERT  ( ROLEID = LS_DATA-ROLEID
+                                                 FUNAREA = LS_DATA-FUNAREA ) ).
+        ENDIF.
+    ENDCASE.
+
+  ENDLOOP.
+
+  DELETE GRACROLEFA FROM TABLE GT_DELETE.
+  INSERT GRACROLEFA FROM TABLE GT_INSERT.
+
+  IF SY-SUBRC = 0.
+    MESSAGE I010 DISPLAY LIKE 'I'.
+  ENDIF.
+
+ENDFORM.
+FORM POPUP_TO_INFORM .
+  CALL FUNCTION 'POPUP_TO_INFORM'
+    EXPORTING
+      TITEL = TEXT-001
+      TXT1  = TEXT-009
+*     TXT2  = |{ TEXT-002 } { GV_LINES_I }|
+*     TXT3  = |{ TEXT-003 } { GV_LINES_M }|
+*     TXT4  = |{ TEXT-004 } { GV_LINES_D }|.
+    .
+ENDFORM.
+
+
+FORM DISPLAY_MESSAGE USING PV_TITLE
+                           PV_TEXT
+                           PV_TXT01
+                           PV_TXT02
+                     CHANGING PV_ANSWER.
+
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      TITLEBAR              = PV_TITLE
+      TEXT_QUESTION         = PV_TEXT
+      TEXT_BUTTON_1         = PV_TXT01
+      TEXT_BUTTON_2         = PV_TXT02
+      DISPLAY_CANCEL_BUTTON = ' '
+    IMPORTING
+      ANSWER                = PV_ANSWER
+    EXCEPTIONS
+      TEXT_NOT_FOUND        = 1
+      OTHERS                = 2.
+
+ENDFORM.
